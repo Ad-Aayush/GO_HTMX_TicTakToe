@@ -13,6 +13,14 @@ type game struct {
 	Result string
 }
 
+type node struct {
+	Grid  [9]string
+	Turn  string
+	score int
+	seen  bool
+	next  []*node
+}
+
 func flip_turn(s string) string {
 	if s == "X" {
 		return "O"
@@ -49,9 +57,64 @@ func check_win(grid []string) string {
 	return "Draw"
 }
 
+func build_tree(root *node) *node {
+	if root.Grid[0] == "" && root.Grid[1] == "" && root.Grid[2] == "" && root.Grid[3] == "X" {
+		log.Print("Foubd")
+	}
+	if root.seen {
+		return root
+	}
+	root.seen = true
+	res := check_win(root.Grid[:])
+	if res == "Draw" {
+		root.score = 0
+		return root
+	} else if res == "Win" {
+		if root.Turn == "O" {
+			root.score = 1
+		} else {
+			root.score = -1
+		}
+		return root
+	}
+	for i := range root.Grid {
+		if root.Grid[i] == "" {
+			toSend := new(node)
+			*toSend = node{
+				Grid:  [9]string{},
+				Turn:  flip_turn(root.Turn),
+				score: 0,
+				seen:  false,
+				next:  []*node{},
+			}
+
+			// Copy the grid values and update the current cell
+			for j := 0; j < 9; j++ {
+				toSend.Grid[j] = root.Grid[j]
+			}
+			toSend.Grid[i] = root.Turn
+
+			// Append the new node after building its tree
+			root.next = append(root.next, build_tree(toSend))
+		}
+	}
+	if root.Turn == "X" {
+		for _, x := range root.next {
+			root.score = max(root.score, x.score)
+		}
+	} else {
+		for _, x := range root.next {
+			root.score = min(root.score, x.score)
+		}
+	}
+
+	return root
+}
+
 func main() {
 	state := make(map[string]game)
-
+	root := node{[9]string{"", "", "", "", "", "", "", "", ""}, "X", 0, false, []*node{}}
+	root = *build_tree(&root)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		Game := game{[]string{"", "", "", "", "", "", "", "", ""}, "X", ""}
 
@@ -116,5 +179,4 @@ func main() {
 		temp.ExecuteTemplate(w, "Play", state)
 	})
 	http.ListenAndServe(":8000", nil)
-
 }
