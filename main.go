@@ -17,7 +17,6 @@ type node struct {
 	Grid  [9]string
 	Turn  string
 	score int
-	seen  bool
 	next  []*node
 }
 
@@ -58,13 +57,7 @@ func check_win(grid []string) string {
 }
 
 func build_tree(root *node) *node {
-	if root.Grid[0] == "" && root.Grid[1] == "" && root.Grid[2] == "" && root.Grid[3] == "X" {
-		log.Print("Foubd")
-	}
-	if root.seen {
-		return root
-	}
-	root.seen = true
+
 	res := check_win(root.Grid[:])
 	if res == "Draw" {
 		root.score = 0
@@ -84,7 +77,6 @@ func build_tree(root *node) *node {
 				Grid:  [9]string{},
 				Turn:  flip_turn(root.Turn),
 				score: 0,
-				seen:  false,
 				next:  []*node{},
 			}
 
@@ -111,18 +103,30 @@ func build_tree(root *node) *node {
 	return root
 }
 
+func is_equal(a, b [9]string) bool {
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func main() {
 	state := make(map[string]game)
-	root := node{[9]string{"", "", "", "", "", "", "", "", ""}, "X", 0, false, []*node{}}
-	root = *build_tree(&root)
+
+	root := new(node)
+	root = &node{[9]string{"", "", "", "", "", "", "", "", ""}, "X", 0, []*node{}}
+	root = build_tree(root)
+
+	cur_state := root
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		Game := game{[]string{"", "", "", "", "", "", "", "", ""}, "X", ""}
-
+		cur_state = root
 		state["Grid"] = Game
 		temp := template.Must(template.ParseFiles("index.html"))
 		temp.Execute(w, state)
 	})
-
 	http.HandleFunc("/click", func(w http.ResponseWriter, r *http.Request) {
 		log.Print("Click")
 		idStr := r.FormValue("id")
@@ -136,7 +140,7 @@ func main() {
 			temp.ExecuteTemplate(w, "Play", state)
 			return
 		}
-		cur_turn := state["Grid"].Turn
+
 		// state["Game"].Grid[id] = state["Game"].Turn
 
 		if entry, ok := state["Grid"]; ok {
@@ -149,16 +153,7 @@ func main() {
 		}
 
 		res := check_win(state["Grid"].Grid)
-		if res == "" {
-			if entry, ok := state["Grid"]; ok {
-
-				// Then we modify the copy
-				entry.Turn = flip_turn(cur_turn)
-
-				// Then we reassign map entry
-				state["Grid"] = entry
-			}
-		} else {
+		if res != "" {
 			if entry, ok := state["Grid"]; ok {
 
 				// Then we modify the copy
@@ -167,13 +162,53 @@ func main() {
 				// Then we reassign map entry
 				state["Grid"] = entry
 			}
+			temp := template.Must(template.ParseFiles("index.html"))
+			temp.ExecuteTemplate(w, "Play", state)
+			return
+		}
+		for i := range cur_state.next {
+			if is_equal([9]string(state["Grid"].Grid), cur_state.next[i].Grid) {
+				cur_state = cur_state.next[i]
+				break
+			}
+		}
+		min_ind := 0
+
+		for i := range cur_state.next {
+			if cur_state.next[i].score < cur_state.next[min_ind].score {
+				min_ind = i
+			}
+		}
+		cur_state = cur_state.next[min_ind]
+		new_grid := cur_state.Grid
+		if entry, ok := state["Grid"]; ok {
+
+			// Then we modify the copy
+			entry.Grid = new_grid[:]
+
+			// Then we reassign map entry
+			state["Grid"] = entry
+		}
+		res = check_win(state["Grid"].Grid)
+		if res != "" {
+			if entry, ok := state["Grid"]; ok {
+
+				// Then we modify the copy
+				entry.Result = res
+				entry.Turn = flip_turn(entry.Turn)
+				// Then we reassign map entry
+				state["Grid"] = entry
+			}
+			temp := template.Must(template.ParseFiles("index.html"))
+			temp.ExecuteTemplate(w, "Play", state)
+			return
 		}
 		temp := template.Must(template.ParseFiles("index.html"))
 		temp.ExecuteTemplate(w, "Play", state)
 	})
 	http.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
 		Game := game{[]string{"", "", "", "", "", "", "", "", ""}, "X", ""}
-
+		cur_state = root
 		state["Grid"] = Game
 		temp := template.Must(template.ParseFiles("index.html"))
 		temp.ExecuteTemplate(w, "Play", state)
