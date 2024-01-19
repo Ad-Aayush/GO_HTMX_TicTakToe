@@ -1,0 +1,28 @@
+@media (min-width: 640px) {
+    .btn-tic-tac-toe {
+      display: flex; /* Use flexbox for alignment */
+      align-items: center; /* Align vertically */
+      justify-content: center; /* Align horizontally */
+      text-align: center; /* Center text as a fallback */
+      height: 0;
+      padding-top: 100%; /* Maintain square aspect ratio */
+      position: relative; /* Relative positioning for absolute child */
+      overflow: hidden; /* Prevents any content from spilling out */
+    }
+
+    .btn-tic-tac-toe::before {
+      content: "";
+      float: left;
+      padding-top: 100%; /* Maintain square aspect ratio */
+    }
+
+    .btn-tic-tac-toe span {
+      position: absolute; /* Absolute position the text span */
+      width: 100%; /* Span the full width of the button */
+      top: 50%; /* Position at the top half */
+      left: 50%; /* Position at the left half */
+      transform: translate(-50%, -50%); /* Center the text span */
+      font-size: 4rem; /* Large text size */
+      pointer-events: none; /* Allows clicking through the text */
+    }
+  }

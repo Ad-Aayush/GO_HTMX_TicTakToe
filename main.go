@@ -1,10 +1,11 @@
 package main
 
 import (
-	"html/template"
+	"context"
 	"log"
-	"net/http"
 	"strconv"
+
+	"github.com/labstack/echo/v4"
 )
 
 type game struct {
@@ -113,6 +114,7 @@ func is_equal(a, b [9]string) bool {
 }
 
 func main() {
+	e := echo.New()
 	state := make(map[string]game)
 
 	root := new(node)
@@ -120,25 +122,26 @@ func main() {
 	root = build_tree(root)
 
 	cur_state := root
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	e.GET("/", func(c echo.Context) error {
 		Game := game{[]string{"", "", "", "", "", "", "", "", ""}, "X", ""}
 		cur_state = root
 		state["Grid"] = Game
-		temp := template.Must(template.ParseFiles("index.html"))
-		temp.Execute(w, state)
+		// temp := template.Must(template.ParseFiles("index.html"))
+		// temp.Execute(w, state)
+		component := index(state["Grid"])
+		return component.Render(context.Background(), c.Response().Writer)
 	})
-	http.HandleFunc("/click", func(w http.ResponseWriter, r *http.Request) {
+	e.POST("/click", func(c echo.Context) error {
 		log.Print("Click")
-		idStr := r.FormValue("id")
+		idStr := c.FormValue("id")
 
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
 			log.Fatal("ERROR: ", err)
 		}
 		if state["Grid"].Result != "" {
-			temp := template.Must(template.ParseFiles("index.html"))
-			temp.ExecuteTemplate(w, "Play", state)
-			return
+			component := play(state["Grid"])
+			return component.Render(context.Background(), c.Response().Writer)
 		}
 
 		// state["Game"].Grid[id] = state["Game"].Turn
@@ -162,9 +165,8 @@ func main() {
 				// Then we reassign map entry
 				state["Grid"] = entry
 			}
-			temp := template.Must(template.ParseFiles("index.html"))
-			temp.ExecuteTemplate(w, "Play", state)
-			return
+			component := play(state["Grid"])
+			return component.Render(context.Background(), c.Response().Writer)
 		}
 		for i := range cur_state.next {
 			if is_equal([9]string(state["Grid"].Grid), cur_state.next[i].Grid) {
@@ -199,19 +201,20 @@ func main() {
 				// Then we reassign map entry
 				state["Grid"] = entry
 			}
-			temp := template.Must(template.ParseFiles("index.html"))
-			temp.ExecuteTemplate(w, "Play", state)
-			return
+			component := play(state["Grid"])
+			return component.Render(context.Background(), c.Response().Writer)
 		}
-		temp := template.Must(template.ParseFiles("index.html"))
-		temp.ExecuteTemplate(w, "Play", state)
+		component := play(state["Grid"])
+		return component.Render(context.Background(), c.Response().Writer)
 	})
-	http.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
+
+	e.POST("/reset", func(c echo.Context) error {
 		Game := game{[]string{"", "", "", "", "", "", "", "", ""}, "X", ""}
 		cur_state = root
 		state["Grid"] = Game
-		temp := template.Must(template.ParseFiles("index.html"))
-		temp.ExecuteTemplate(w, "Play", state)
+		component := play(state["Grid"])
+		return component.Render(context.Background(), c.Response().Writer)
+
 	})
-	http.ListenAndServe(":8000", nil)
+	e.Logger.Fatal(e.Start(":8000"))
 }

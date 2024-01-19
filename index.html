@@ -17,6 +17,7 @@
     <style>
       @media (min-width: 640px) {
         .btn-tic-tac-toe {
+          
           display: flex; /* Use flexbox for alignment */
           align-items: center; /* Align vertically */
           justify-content: center; /* Align horizontally */
@@ -25,12 +26,14 @@
           padding-top: 100%; /* Maintain square aspect ratio */
           position: relative; /* Relative positioning for absolute child */
           overflow: hidden; /* Prevents any content from spilling out */
+          min-width: 640px
         }
 
         .btn-tic-tac-toe::before {
           content: "";
           float: left;
           padding-top: 100%; /* Maintain square aspect ratio */
+          min-width: 640px
         }
 
         .btn-tic-tac-toe span {
@@ -41,6 +44,7 @@
           transform: translate(-50%, -50%); /* Center the text span */
           font-size: 4rem; /* Large text size */
           pointer-events: none; /* Allows clicking through the text */
+          min-width: 640px
         }
       }
     </style>

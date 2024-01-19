@@ -1,0 +1,109 @@
+package main
+
+import "strconv"
+
+templ play(curr game) {
+	if curr.Result == "" {
+		<div id="gameStatus" class="text-2xl text-center text-gray-600 mb-4">
+			Player  { curr.Turn }'s turn
+		</div>
+	} else if curr.Result == "Win" {
+		<div id="gameStatus" class="text-2xl text-center text-gray-600 mb-4">
+			Player  { curr.Turn } Wins
+		</div>
+	} else {
+		<div id="gameStatus" class="text-2xl text-center text-gray-600 mb-4">
+			It's a Draw
+		</div>
+	}
+	<div class="grid grid-cols-3 gap-1 max-w-md mx-auto">
+		<!-- Tic-Tac-Toe Cells -->
+		for i, a := range curr.Grid {
+			if a == "" && curr.Result == "" {
+				<form>
+					<input type="hidden" name="id" value={ strconv.Itoa(i) }/>
+					<button
+						class="btn-tic-tac-toe bg-white border-2 border-gray-200 hover:bg-gray-100 focus:outline-none"
+						hx-post="/click"
+					>
+						<span>{ a } </span>
+					</button>
+				</form>
+			} else {
+				<button
+					class="btn-tic-tac-toe bg-white border-2 border-gray-200"
+					disabled
+				>
+					<span>{ a } </span>
+				</button>
+			}
+		}
+	</div>
+}
+
+templ index(curr game) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>Tic-Tac-Toe Game</title>
+			<!-- Correct Tailwind CSS CDN -->
+			<link
+				href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+				rel="stylesheet"
+			/>
+			<script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+			<style type="text/css">
+				.btn-tic-tac-toe {
+					display: flex; /* Use flexbox for alignment */
+					align-items: center; /* Align vertically */
+					justify-content: center; /* Align horizontally */
+					text-align: center; /* Center text as a fallback */
+					height: 0;
+					padding-top: 100%; /* Maintain square aspect ratio */
+					position: relative; /* Relative positioning for absolute child */
+					overflow: hidden; /* Prevents any content from spilling out */
+					min-width: 120px; /* Ensures a minimum width for the button */
+					width: 100%; /* Adapts to the container size */
+					box-sizing: border-box; /* Includes padding and border in the element's width */
+				}
+
+				.btn-tic-tac-toe::before {
+					content: "";
+					float: left;
+					padding-top: 100%; /* Maintain square aspect ratio */
+				}
+
+				.btn-tic-tac-toe span {
+					position: absolute; /* Absolute position the text span */
+					width: 100%; /* Span the full width of the button */
+					top: 50%; /* Position at the top half */
+					left: 50%; /* Position at the left half */
+					transform: translate(-50%, -50%); /* Center the text span */
+					font-size: 4rem; /* Large text size */
+					pointer-events: none; /* Allows clicking through the text */
+				}
+			</style>
+		</head>
+		<body class="bg-teal-200 flex items-center justify-center h-screen">
+			<div class="container mx-auto px-4">
+				<h1 class="text-4xl text-center text-gray-800 mb-8">Tic-Tac-Toe</h1>
+				<div id="main" hx-target="this" hx-swap="innerHTML">
+					@play(curr)
+				</div>
+				<div class="text-center mt-4">
+					<button
+						id="resetButton"
+						class="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700 focus:outline-none"
+						hx-swap="innerHTML"
+						hx-target="#main"
+						hx-post="/reset"
+					>
+						Reset Game
+					</button>
+				</div>
+			</div>
+		</body>
+	</html>
+}
